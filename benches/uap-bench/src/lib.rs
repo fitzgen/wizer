@@ -1,5 +1,14 @@
+#[cfg(feature = "wizer")]
+mod alloc;
+#[cfg(feature = "wizer")]
+use alloc::ZeroDuringInitAllocator;
+
 use regex::RegexSet;
 use serde::Deserialize;
+
+#[cfg(feature = "wizer")]
+#[global_allocator]
+static ALLOC: ZeroDuringInitAllocator = ZeroDuringInitAllocator::new();
 
 static mut UA_REGEX_SET: Option<RegexSet> = None;
 
@@ -11,15 +20,6 @@ struct UserAgentParsers {
 #[derive(Deserialize)]
 struct UserAgentParserEntry {
     regex: String,
-    // family_replacement: Option<String>,
-    // brand_replacement: Option<String>,
-    // model_replacement: Option<String>,
-    // os_replacement: Option<String>,
-    // v1_replacement: Option<String>,
-    // v2_replacement: Option<String>,
-    // os_v1_replacement: Option<String>,
-    // os_v2_replacement: Option<String>,
-    // os_v3_replacement: Option<String>,
 }
 
 #[export_name = "wizer.initialize"]
@@ -37,6 +37,9 @@ pub extern "C" fn init() {
         assert!(UA_REGEX_SET.is_none());
         UA_REGEX_SET = Some(regex_set);
     }
+
+    #[cfg(feature = "wizer")]
+    ALLOC.finish_init();
 }
 
 #[export_name = "run"]
